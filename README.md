@@ -268,7 +268,6 @@ wget https://public-docs.crg.es/rguigo/Data/bborsari/UVIC/epigenomics_course/H3K
 mkdir scatterplot.correlation
 cd ..
 ```
-
 Check that the row order (list of genes) is the same in the expression matrices of the two tissue.
 ```
 diff <(cut -f1 data/tsv.files/ENCFF268RWA.tsv) <(cut -f1 data/tsv.files/ENCFF918KPC.tsv)
@@ -433,21 +432,8 @@ mkdir data
 mkdir data/bigBed.files
 ```
 
-**Retrieve from a newly generated metadata file ATAC-seq peaks (bigBed narrow, pseudoreplicated peaks, assembly GRCh38) for stomach and sigmoid_colon for the same donor used in the previous sections. Make sure your md5sum values coincide with the ones provided by ENCODE.**
+*Retrieve from a newly generated metadata file ATAC-seq peaks (bigBed narrow, pseudoreplicated peaks, assembly GRCh38) for stomach and sigmoid_colon for the same donor used in the previous sections. Make sure your md5sum values coincide with the ones provided by ENCODE.*
 
-We get the link to download the metadate file from the experiments in ENCODE associated the following characteristics:
-
-Assay type: DNA accessibility
-
-Assay title: ATAC-seq
-
-Status: released
-
-Genome assembly: GRCh38
-
-Biosample term name: stomach AND sigmoid colon
-
-Download the file.
 ```
 ../bin/download.metadata.sh "https://www.encodeproject.org/metadata/?type=Experiment&replicates.library.biosample.donor.uuid=d370683e-81e7-473f-8475-7716d027849b&status=released&status=submitted&status=in+progress&assay_slims=DNA+accessibility&assay_title=ATAC-seq&biosample_ontology.term_name=stomach&biosample_ontology.term_name=sigmoid+colon" 
 ```
@@ -483,9 +469,9 @@ done
 cat data/bigBed.files/md5sum.txt
 ```
 
-
-
-**For each tissue, run an intersection analysis using BEDTools: report 1) the number of peaks that intersect promoter regions, 2) the number of peaks that fall outside gene coordinates (whole gene body, not just the promoter regions).**
+*For each tissue, run an intersection analysis using BEDTools: 
+report 1) the number of peaks that intersect promoter regions, 
+2) the number of peaks that fall outside gene coordinates (whole gene body, not just the promoter regions).*
 
 BEDTools need BED files, so we have to convert bigBed files of peaks to BED files with the bigBedToBed command.
 ```
@@ -496,7 +482,8 @@ while read filename; do
 done
 ```
 
-Download the list of promoters ([-2 kb, +2 Kb] from TSS) of protein-coding genes.
+Download the list of promoters (+/- 2 kb from TSS) of protein-coding genes.
+
 ```
 mkdir annotation
 cd annotation/
@@ -516,14 +503,14 @@ done
 
 We can see the new files and count the number of peaks that intersect promoter regions.
 ```
-head analyses/peaks.analysis/peaks.promoters.stomach.txt
-head analyses/peaks.analysis/peaks.promoters.sigmoid_colon.txt
+head analyses/peaks.analysis/peaks.promoters.stomach.txt 
+head analyses/peaks.analysis/peaks.promoters.sigmoid_colon.txt 
 
-cat analyses/peaks.analysis/peaks.promoters.stomach.txt | wc -l
-cat analyses/peaks.analysis/peaks.promoters.sigmoid_colon.txt | wc -l
+cat analyses/peaks.analysis/peaks.promoters.stomach.txt | wc -l ## 33169
+cat analyses/peaks.analysis/peaks.promoters.sigmoid_colon.txt | wc -l ## 38071
 ```
-44749 peaks intersect promoter regions in stomach. 
-47871 peaks intersect promoter regions in sigmoid colon.
+33169 peaks intersect promoter regions in stomach. 
+38071 peaks intersect promoter regions in sigmoid colon.
 
 To get the genomic coordinates of the genes, we download the Gencode annotation version 24.
 ```
@@ -559,8 +546,8 @@ cat analyses/peaks.analysis/genes.with.peaks.outside.stomach.txt | wc -l
 head analyses/peaks.analysis/genes.with.peaks.outside.sigmoid_colon.txt
 cat analyses/peaks.analysis/genes.with.peaks.outside.sigmoid_colon.txt | wc -l
 ```
-37035 peaks fall outside gene coordinates in sigmoid colon. 
-34537 peaks fall outside gene coordinates in stomach.
+34537 peaks fall outside gene coordinates in sigmoid colon. 
+37035 peaks fall outside gene coordinates in stomach.
 
 ## 5. Distal regulatory activity
 
@@ -602,7 +589,7 @@ while read filename; do
 done
 ```
 
-Check their integrity by verifying their MD5 hash. As we can see in the image, they are correct.
+Check their integrity by verifying their MD5 hash. As we can see in the image, it is correct.
 ```
 for file_type in bigBed; do
 
@@ -623,26 +610,26 @@ for file_type in bigBed; do
 done
 cat data/bigBed.files/md5sum.txt
 ```
-Creating new folders.
+Create new folders.
 ```
 mkdir analyses/peaks.analysis
 mkdir data/bed.files
 mkdir annotation
 ```
 
-Converting bigBed files of H3K27ac peaks to BED files with the bigBedToBed command
+Convert bigBed files of H3K27ac peaks to BED files with the bigBedToBed command
 ```
 cut -f1 analyses/bigBed.peaks.ids.txt |\
 while read filename; do
   bigBedToBed data/bigBed.files/"$filename".bigBed data/bed.files/"$filename".bed
 done
 ```
-Converting the previous catalogue of open regions in each tissue to bed files in the current directory.
+Convert the previous catalogue of open regions in each tissue to bed files in the current directory.
 ```
 for tissue in stomach sigmoid_colon; do   cat ../ATAC-seq/analyses/peaks.analysis/genes.with.peaks.outside."$tissue".txt > annotation/open.outside.genes."$tissue".bed; done
 ```
 
-Retrieving the regions with peaks in these regions in each tissue.
+Retrieve the regions with peaks in these regions in each tissue.
 ```
 cut -f-2 analyses/bigBed.peaks.ids.txt |\
 while read filename tissue; do 
@@ -687,7 +674,7 @@ for file_type in bigBed; do
 done
 cat data/bigBed.files/md5sum.txt
 ```
-MD5 hashes are also correct.
+MD5 hashes are correct.
 
 ```
 cut -f1 analyses/bigBed.peaks.ids.txt |\
@@ -695,12 +682,11 @@ while read filename; do
   bigBedToBed data/bigBed.files/"$filename".bigBed data/bed.files/"$filename".bed
 done
 ```
-
 The difference is now we retrieve regions that overlaping peaks of H3K27ac in the corresponding tissue.
 ```
 cut -f-2 analyses/bigBed.peaks.ids.txt |\
 while read filename tissue; do 
-  bedtools intersect -a analyses/peaks.analysis/open.regions.H3K27ac."$tissue".bed -b data/bed.files/"$filename".bed -u |\
+  intersect -a analyses/peaks.analysis/open.regions.H3K27ac."$tissue".bed -b data/bed.files/"$filename".bed -u |\
   sort -u > analyses/peaks.analysis/candidate.enhancers."$tissue".txt
 done
 
@@ -710,13 +696,12 @@ head analyses/peaks.analysis/candidate.enhancers.sigmoid_colon.txt
 cat analyses/peaks.analysis/candidate.enhancers.sigmoid_colon.txt | wc -l
 ```
 
-There are 8022 candidate enhancers in stomach
-14215 candidate enhancers in sigmoid colon.
+8022 candidate distal regulatory elements in stomach.
+14215 candidate distal regulatory elements in sigmoid colon.
 
-**Task 3: Focus on regulatory elements that are located on chromosome 1 (hint: to parse a file based on the value of a specific column, have a look at what we did here), and generate a file regulatory.elements.starts.tsv that contains the name of the regulatory region (i.e. the name of the original ATAC-seq peak) and the start (5') coordinate of the region.**
+*Task 3: Focus on regulatory elements that are located on chromosome 1 (hint: to parse a file based on the value of a specific column, have a look at what we did here), and generate a file regulatory.elements.starts.tsv that contains the name of the regulatory region (i.e. the name of the original ATAC-seq peak) and the start (5') coordinate of the region.*
 
 Filter by the chromosome 1 and keep only the name of the regulatory region and the start (5') coordinate of the region. 
-There are 987 candidates for stomach and 1521 for sigmoid colon.
 ```
 for tissue in stomach sigmoid_colon; do
   awk '$1=="chr1"'  analyses/peaks.analysis/candidate.enhancers."$tissue".txt | awk 'BEGIN{FS=OFS="\t"}{if ($6=="+"){start=$2} else {start=$3}; print $4, start}' > regulatory.elements.starts.$tissue.tsv
@@ -727,18 +712,19 @@ cat regulatory.elements.starts.stomach.tsv | wc -l
 head regulatory.elements.starts.stomach.tsv
 cat regulatory.elements.starts.sigmoid_colon.tsv | wc -l
 ```
+There are 987 candidates for stomach and 1521 for sigmoid colon.
 
-**Task 4: Focus on protein-coding genes located on chromosome 1. From the BED file of gene body coordinates that you generated here, prepare a tab-separated file called gene.starts.tsv which will store the name of the gene in the first column, and the start coordinate of the gene on the second column (REMEMBER: for genes located on the minus strand, the start coordinate will be at the 3').**
+*Task 4: Focus on protein-coding genes located on chromosome 1. From the BED file of gene body coordinates that you generated here, prepare a tab-separated file called gene.starts.tsv which will store the name of the gene in the first column, and the start coordinate of the gene on the second column (REMEMBER: for genes located on the minus strand, the start coordinate will be at the 3').*
 
 Copy the file to the current directory.
 ```
 cp ../ChIP-seq/annotation/gencode.v24.protein.coding.gene.body.bed annotation/
 ```
-
-We get the file.
+Parse the file with awk.
 ```
 cat annotation/gencode.v24.protein.coding.gene.body.bed | awk 'BEGIN{FS=OFS="\t"}{if ($6=="+"){start=$2} else {start=$3}; print $4, start}' > gene.starts.tsv
 ```
+There are 2047 genes.
 
 **Task 5: Download or copy this python script inside the epigenomics_uvic/bin folder. This script takes as input two distinct arguments: 1) --input corresponds to the file gene.starts.tsv (i.e. the file you generated in Task #4); 2) --start corresponds to the 5' coordinate of a regulatory element. Complete the python script so that for a given coordinate --start the script returns the closest gene, the start of the gene and the distance of the regulatory element.**
 
@@ -746,11 +732,63 @@ Download the script.
 ```
 wget https://public-docs.crg.es/rguigo/Data/bborsari/UVIC/epigenomics_course/get.distance.py
 ```
-
-Modify the script.
+Create the script.
 ```
 nano get.distance.py
 cat get.distance.py
+```
+Modify the script.
+```
+		#!/usr/bin/env python
+
+ 		#************
+ 		# LIBRARIES *
+ 		#************
+
+ 		import sys
+ 		from optparse import OptionParser
+
+ 		#*****************
+ 		# OPTION PARSING *
+ 		#*****************
+
+		parser = OptionParser()
+		parser.add_option("-i", "--input", dest="input")
+		parser.add_option("-s", "--start", dest="start")
+		options, args = parser.parse_args()
+		open_input = open(options.input)
+		enhancer_start = int(options.start)
+
+
+		#********
+		# BEGIN *
+		#********
+
+		x=1000000 # set maximum distance to 1 Mb
+		selectedGene="" # initialize the gene as empty
+		selectedGeneStart=0 # initialize the start coordinate of the gene as empty
+
+		for line in open_input.readlines(): # for each line in the input file
+			gene, y = line.strip().split('\t') # split the line into two columns based on a tab 
+ 				
+ 				
+			# define a variable called position that correspond to the integer of the start of the gene
+			position= int(y)
+ 				
+			# compute the absolute value of the difference between position and enhancer_start
+			absolut_pos = abs(position - enhancer_start)
+ 				
+			# if this absolute value is lower than x
+			if absolut_pos < x:
+				# this value will now be your current x
+				x = absolut_pos 
+				# save gene as selectedGene
+				selectedGene = gene
+				# save position as selectedGeneStart
+				selectedGeneStart = position
+
+		print "\t".join([selectedGene, str(selectedGeneStart), str(x)])
+
 ```
 
 To make sure our script is working fine, we should be getting the result: ENSG00000187642.9	982093 2093
@@ -758,8 +796,7 @@ To make sure our script is working fine, we should be getting the result: ENSG00
 ```
 python get.distance.py --input gene.starts.tsv --start 980000
 ```
-
-There is no expected output. Position reach the number 982093 as expected, but it continues. Maybe there is an error in the input file.
+Script works fine
 
 **Task 6. For each regulatory element contained in the file regulatory.elements.starts.tsv, retrieve the closest gene and the distance to the closest gene using the python script you created above.**
 
