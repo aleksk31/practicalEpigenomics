@@ -112,6 +112,7 @@ mkdir analyses
 
 Prepare two folders to store bigBed peak calling and bigWig FC signal files.
 ```
+mkdir data/bigBed.files data/bigWig.files
 grep -F H3K4me3 metadata.tsv |\
 grep -F "bigBed_narrowPeak" |\
 grep -F "pseudoreplicated_peaks" |\
@@ -157,7 +158,8 @@ for file_type in bigBed bigWig; do
 
 done
 ```
-
+2. Making the own aggregation plot
+```
 Create a folder, download the  Gencode reference file and decompress it.
 ```
 mkdir annotation
@@ -165,7 +167,7 @@ wget https://www.encodeproject.org/files/gencode.v24.primary_assembly.annotation
 gunzip annotation/gencode.v24.primary_assembly.annotation.gtf.gz
 ```
 
-Converting the gtf annotation file to a BED format.
+Convert the gtf annotation file to a BED format.
 ```
 awk '$3=="gene"' annotation/gencode.v24.primary_assembly.annotation.gtf |\
 grep -F "protein_coding" |\
@@ -175,12 +177,13 @@ sed 's/\"//g' |\
 awk 'BEGIN{FS=OFS="\t"}$1!="chrM"{$2=($2-1); print $0}' > annotation/gencode.v24.protein.coding.gene.body.bed
 ```
 
-Preparing a text file with the IDs for the gene expression matrices for total RNA-seq.
+2.3. Retrieve for each tissue two sets of highly and lowly expressed genes.
+```
+Prepare a text file with the IDs for the gene expression matrices for total RNA-seq.
 ```
 echo -e "ENCFF268RWA\tsigmoid_colon\nENCFF918KPC\tstomach" > analyses/tsv.totalRNASeq.ids.txt
 ```
-
-Creating a folder tsv.files inside data, and download there the expression matrices
+Create a folder tsv.files inside data, and download there the expression matrices
 ```
 mkdir data/tsv.files
 cut -f1 analyses/tsv.totalRNASeq.ids.txt |\
@@ -189,7 +192,7 @@ while read filename; do
 done
 ```
 
-Subset protein-coding genes.
+Subset the expression matrices for protein-coding genes and retrieving gene_id and TPM information.
 ```
 cut -f1 analyses/tsv.totalRNASeq.ids.txt |\
 while read filename; do 
@@ -198,7 +201,7 @@ while read filename; do
 done
 ```
 
-Selecting the 1000 most expressed genes in each of the two tissues.
+Select the 1000 most expressed genes in each of the two tissues.
 ```
 cat analyses/tsv.totalRNASeq.ids.txt |\
 while read filename tissue; do
@@ -208,7 +211,7 @@ while read filename tissue; do
 done
 ```
 
-Selected the 1000 least expressed genes in each of the two tissues.
+Select the 1000 least expressed genes in each of the two tissues.
 ```
 cat analyses/tsv.totalRNASeq.ids.txt |\
 while read filename tissue; do 
@@ -218,7 +221,7 @@ while read filename tissue; do
 done
 ```
 
-We prepare BED files for the 1000 least expressed genes in the two tissues:
+Prepare BED files for the 1000 least expressed genes in the two tissues:
 ```
 for tissue in stomach sigmoid_colon; do
   ../bin/selectRows.sh analyses/"$tissue".1000.least.expressed.genes.txt <(awk 'BEGIN{FS=OFS="\t"}{print $4, $0}' annotation/gencode.v24.protein.coding.gene.body.bed) |\
@@ -234,7 +237,7 @@ for tissue in stomach sigmoid_colon; do
 done
 ```
 
-Aggregated signal over the TSS of the selected genes.
+2.4. Compute the aggregated signal over the TSS of the selected genes.
 ```
 cd analyses/
 mkdir aggregation.plot
@@ -255,12 +258,12 @@ for tissue in stomach sigmoid_colon; do
 done
 ```
 
-Download the matrix of H3K4me3 FC signals over promoter regions.
+3. Download the matrix of H3K4me3 FC signals over promoter regions.
 ```
 wget https://public-docs.crg.es/rguigo/Data/bborsari/UVIC/epigenomics_course/H3K4me3.matrix.tsv
 ```
-
-Creating a folder to store the study of the correlation coefficient between expression and H3K4me3 levels-
+4.1. Get the expression matrix
+4. A folder to store the study of the correlation coefficient between expression and H3K4me3 levels-
 ```
 mkdir scatterplot.correlation
 cd ..
@@ -282,37 +285,37 @@ Checking the row order is the same for expression and H3K4me3 matrices.
 diff <(cut -f1 analyses/H3K4me3.matrix.tsv) <(cut -f1 analyses/expression.matrix.tsv)
 ```
 
-Producing a scatterplot of expression (x axis) vs. H3K4me3 (y axis).
+4.2. Produce a scatterplot of expression (x axis) vs. H3K4me3 (y axis).
 ```
 for tissue in sigmoid_colon stomach; do
   Rscript ../bin/scatterplot.correlation.R --expression analyses/expression.matrix.tsv --mark analyses/H3K4me3.matrix.tsv --tissue "$tissue" --output analyses/scatterplot.correlation/scatterplot.correlation."$tissue".pdf
 done
 ```
-
-Creating some folders.
+5. Retrieving genes with tissue specific marking.
+Create some folders.
 ```
 cd analyses/
 mkdir peaks.analysis
 cd ..
-mkdir data/bed.files
-```
 
-Converting bigBed files of H3K4me3 peaks to BED files.
 ```
+5.1. Genes with peak of H3K4me3 in each tissue
+```
+mkdir data/bed.files
 cut -f1 analyses/bigBed.peaks.ids.txt |\
 while read filename; do
   bigBedToBed data/bigBed.files/"$filename".bigBed data/bed.files/"$filename".bed
 done
 ```
 
-Downloading the list of promoters ([-2 kb, +2 Kb] from TSS) of protein-coding genes.
+Download the list of promoters ([-2 kb, +2 Kb] from TSS) of protein-coding genes.
 ```
 cd annotation/
 wget https://public-docs.crg.es/rguigo/Data/bborsari/UVIC/epigenomics_course/gencode.v24.protein.coding.non.redundant.TSS.bed
 cd ..
 ```
 
-Retrieving genes with peaks of H3K4me3 at the promoter region in each tissue.
+Retrieve genes with peaks of H3K4me3 at the promoter region in each tissue.
 ```
 cut -f-2 analyses/bigBed.peaks.ids.txt |\
 while read filename tissue; do 
@@ -322,44 +325,44 @@ while read filename tissue; do
 done
 ```
 
-Genes marked by H3K4me3 in both tissues.
+5.2. Genes marked by H3K4me3 in both tissues.
 ```
 ../bin/selectRows.sh analyses/peaks.analysis/genes.with.peaks.stomach.H3K4me3.txt analyses/peaks.analysis/genes.with.peaks.sigmoid_colon.H3K4me3.txt |\
 cut -d "." -f1 > analyses/peaks.analysis/genes.marked.both.tissues.H3K4me3.txt
 ```
-
-Genes with sigmoid colon-specific marking.
+5.3. Genes with tissue-specific marking
+sigmoid colon-specific marking.
 ```
 ../bin/discardRows.sh analyses/peaks.analysis/genes.with.peaks.stomach.H3K4me3.txt analyses/peaks.analysis/genes.with.peaks.sigmoid_colon.H3K4me3.txt |\
 cut -d "." -f1 > analyses/peaks.analysis/genes.with.sigmoid_colon.specific.peaks.H3K4me3.txt
 ```
 
-Genes with stomach-specific marking.
+stomach-specific marking.
 ```
 ../bin/discardRows.sh analyses/peaks.analysis/genes.with.peaks.sigmoid_colon.H3K4me3.txt analyses/peaks.analysis/genes.with.peaks.stomach.H3K4me3.txt |\
 cut -d "." -f1 > analyses/peaks.analysis/genes.with.stomach.specific.peaks.H3K4me3.txt
 ```
 
-Genes not marked in any of the two tissues.
+5.4. Genes not marked in any of the two tissues.
 ```
 ../bin/discardRows.sh <(cat analyses/peaks.analysis/genes.marked.both.tissues.H3K4me3.txt analyses/peaks.analysis/genes.with.stomach.specific.peaks.H3K4me3.txt analyses/peaks.analysis/genes.with.sigmoid_colon.specific.peaks.H3K4me3.txt) <(cut -f7 annotation/gencode.v24.protein.coding.gene.body.bed |\
 cut -d "." -f1) > analyses/peaks.analysis/genes.not.marked.H3K4me3.txt
 ```
 
-GO enrichment analysis.
+5.5. GO enrichment analysis.
 ```
 cut -f7 annotation/gencode.v24.protein.coding.gene.body.bed |\
 cut -d "." -f1 > analyses/peaks.analysis/universe.genes.txt
 ```
 
-We compare the distribution of expression values between the four sets of genes.
+5.6. We compare the distribution of expression values between the four sets of genes.
 ```
 Rscript ../bin/boxplot.expression.R --expression analyses/expression.matrix.tsv --marked_both_tissues analyses/peaks.analysis/genes.marked.both.tissues.H3K4me3.txt --stomach_specific analyses/peaks.analysis/genes.with.stomach.specific.peaks.H3K4me3.txt --sigmoid_colon_specific analyses/peaks.analysis/genes.with.sigmoid_colon.specific.peaks.H3K4me3.txt --not_marked analyses/peaks.analysis/genes.not.marked.H3K4me3.txt --output analyses/peaks.analysis/boxplot.expression.pdf
 ```
 
-Compute the percentage of genes with peaks of H3K4me3 and POLR2A
+6. Compute the percentage of genes with peaks of H3K4me3 and POLR2A
 
-Retrieving the bigBed peak calling IDs for POLR2A from the metadata.
+6.1. Retrieve the bigBed peak calling IDs for POLR2A from the metadata.
 ```
 grep -F POLR2A-human metadata.tsv |\
 grep -F "bigBed_narrowPeak" |\
@@ -370,7 +373,7 @@ sort -k2,2 -k1,1r |\
 sort -k2,2 -u >> analyses/bigBed.peaks.ids.txt
 ```
 
-Downloading the bigBed files.
+Download the bigBed files.
 ```
 awk '$3=="POLR2A-human"{print $1}' analyses/bigBed.peaks.ids.txt |\
 while read filename; do 
@@ -378,7 +381,7 @@ while read filename; do
 done
 ```
 
-Checking the integrity of the downloaded bigBed files.
+Check the integrity of the downloaded bigBed files.
 ```
 # Retrieve MD5 hashes of the files from the metadata
 ../bin/selectRows.sh <(awk '$3=="POLR2A-human"{print $1}' analyses/bigBed.peaks.ids.txt) metadata.tsv | cut -f1,45 > data/bigBed.files/tmp
@@ -395,7 +398,7 @@ rm data/bigBed.files/tmp
 awk '$2!=$3' data/bigBed.files/md5sum.txt
 ```
 
-We convert the bigBed files to BED files.
+Convert the bigBed files to BED files.
 ```
 awk '$3=="POLR2A-human"{print $1}' analyses/bigBed.peaks.ids.txt |\
 while read filename; do 
@@ -403,7 +406,7 @@ while read filename; do
 done
 ```
 
-Genes with peaks of POLR2A in each tissue.
+6.2. Genes with peaks of POLR2A in each tissue.
 ```
 grep -F POLR2A analyses/bigBed.peaks.ids.txt |\
 cut -f-2 |\
@@ -414,7 +417,7 @@ while read filename tissue; do
 done
 ```
 
-We make the Venn Diagram between the sets of genes with peaks of H3K4me3 and POLR2A in the two tissues.
+6.3. Compute the Venn Diagram between the sets of genes with peaks of H3K4me3 and POLR2A in the two tissues.
 ```
 Rscript ../bin/VennDiagram.4groups.R --setA analyses/peaks.analysis/genes.with.peaks.stomach.H3K4me3.txt --setB analyses/peaks.analysis/genes.with.peaks.stomach.POLR2A.txt --setC analyses/peaks.analysis/genes.with.peaks.sigmoid_colon.H3K4me3.txt --setD analyses/peaks.analysis/genes.with.peaks.sigmoid_colon.POLR2A.txt --output analyses/peaks.analysis/Venn.Diagram.H3K4me3.POLR2A.png
 ```
