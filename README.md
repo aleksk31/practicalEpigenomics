@@ -3,24 +3,24 @@
 
 ## 3.1 EN‐TEx ChIP‐seq data: how to navigate the portal and run the chipnf pipeline
 
-Lets run the container
+1.1. Run the following docker container
 ```
 sudo docker run -v $PWD:$PWD -w $PWD --rm -it dgarrimar/epigenomics_course
 ```
 
-Cloning the repository
+1.2. Prepare directories to store the results of your analyses
 ```
 git clone https://github.com/bborsari/epigenomics_uvic
 cd epigenomics_uvic
 cd ChIP-seq; ls
 ```
 
-We download the metadata file. In my case it did not work, so the metadata file was already provided
+We download the metadata file. Ot it could be provided beforehand.
 ```
 ../bin/download.metadata.sh "https://www.encodeproject.org/metadata/?type=Experiment&replicates.library.biosample.donor.uuid=d370683e-81e7-473f-8475-7716d027849b&status=released&assembly=GRCh38&biosample_ontology.term_name=sigmoid+colon&biosample_ontology.term_name=stomach&assay_slims=DNA+binding" 
 ```
 
-Exploring the structure of the metadata file ( already provided).
+Explore the structure of the metadata file.
 ```
 head -1 metadata.tsv
 ```
@@ -35,7 +35,7 @@ We check how many FASTQ files are available for this experiment.
 grep -F H3K4me3 metadata.tsv | grep -F sigmoid_colon | awk 'BEGIN{FS="\t"}$2=="fastq"{n++}END{print n}'
 ```
 
-As we can see, there are 4 files, so we download them.
+We download four (4) files for the experiment.
 ```
 grep -F H3K4me3 metadata.tsv |\
 grep -F sigmoid_colon |\
@@ -45,7 +45,7 @@ while read filename; do
 done
 ```
 
-Downloading control samples' FASTQ files. 
+Download control samples' FASTQ files. 
 ```
 echo -e "ENCFF102SFU\nENCFF599MFK\nENCFF187FWF\nENCFF549PVM\nENCFF876EUR\nENCFF950GED" |\
 while read filename; do 
@@ -57,7 +57,7 @@ done
 mypath=$(pwd)
 ```
 
-We prepare two FASTQ files for the sample (H3K4me3 ChIP):
+We prepare two FASTQ files for the sample -H3K4me3 ChIP:
 ```
 grep -F H3K4me3 metadata.tsv |\
 grep -F sigmoid_colon |\
@@ -72,7 +72,7 @@ head -2 |\
 awk -v mypath="$mypath" 'BEGIN{FS=OFS="\t";n=0}{n++; print "sigmoid_colon_control_1", "sigmoid_colon_control_1_run"n, mypath"/data/fastq.files/"$1".sub.fastq", "sigmoid_colon_control_1", "input"}' >> chip-nf/pipeline.index.tsv
 ```
 
-Leave the container, install Nextflow and run the pipeline.
+Exit the container, run Nextflow and run the pipeline.
 ```
 exit
 cd
