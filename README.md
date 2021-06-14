@@ -825,8 +825,8 @@ for (tissue in c("sigmoid_colon", "stomach")){
  print(result)
 }
 ```
-There is a mean= 20103.10848 and median= 6058 for sigmoid colon.
-Mean = 15807.40932 and median= 5779 for stomach.
+There is a mean= 20103 and median= 6058 for sigmoid colon.
+Mean = 15807 and median= 5779 for stomach.
 
 
 
